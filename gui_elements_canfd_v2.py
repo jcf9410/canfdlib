@@ -94,7 +94,7 @@ class canfdgui():
 
         # connect button
         self.connect_button = tk.Button(self.extra_frame, text="CONNECT", command=self.connect)
-        self.connect_button.grid(column=0, row=2, pady=0) # enlarge
+        self.connect_button.grid(column=0, row=2, pady=5) # enlarge
         self.connect_button.config(height=3, width=15)
 
         # dlc droplist and button
@@ -119,16 +119,22 @@ class canfdgui():
                 self.connect()
             except RuntimeError:
                 self.rx_box_text.insert(tk.END, "Device not ready. Connect manually." + '\n')
-            self.window.after(0, self.main)
-        self.window.mainloop()
+            finally:
+                #self.window.after(10, self.main)
+                self.main()
+                self.window.mainloop()
 
     def connect(self):
         if self.debug:
             print "Debug mode"
             self.rx_box_text.insert(tk.END, "Debug mode" + '\n')
         else:
+            #print(self.inputDict)
             try:
-                ft232h = self.inputDict["ft232h"]
+                if self.inputDict["ft232h"] is None:
+                    ft232h = FT232H()
+                else:
+                    ft232h = self.inputDict["ft232h"]
                 cs = self.inputDict["cs"]
                 max_speed_hz = self.inputDict["max_speed_hz"]
                 mode = self.inputDict["mode"]
@@ -137,21 +143,10 @@ class canfdgui():
                 SPI_MAX_BUFFER_LENGTH = self.inputDict["SPI_MAX_BUFFER_LENGTH"]
                 SPI_BAUDRATE = self.inputDict["SPI_BAUDRATE"]
                 self.canfd = canfdlib.CANFD_SPI(ft232h, cs, max_speed_hz, mode, bitorder, SPI_DEFAULT_BUFFER_LENGTH, SPI_MAX_BUFFER_LENGTH, SPI_BAUDRATE)
+                self.canfd.initialize()
                 self.rx_box_text.insert(tk.END, "Device connected succesfully!" + '\n')
-            except RuntimeError:
-                print "An error ocurred connecting to the device!"
-                self.rx_box_text.insert(tk.END, "An error ocurred connecting to the device!" + '\n')
-            except TypeError:
-                if inputDict == None:
-                    print "Some parameter is not defined. Check the input dictionary"
-                    self.rx_box_text.insert(tk.END, "An error ocurred connecting to the device!" + '\n')
-                else:
-                    print "Some error ocurred in the type of input parameters"
-                    self.rx_box_text.insert(tk.END, "Some error ocurred in the type of input parameters" + '\n')
             except:
-                print "An unexpected error ocurred!"
-                self.rx_box_text.insert(tk.END, "An unexpected error ocurred! Connect manually" + '\n')
-
+                self.rx_box_text.insert(tk.END, "Device not found." + '\n')
 
     def init(self):
         self.canfd.state = APP_STATE_INIT
@@ -161,16 +156,14 @@ class canfdgui():
     def receive(self):
         # start receiving
         self.canfd.state = APP_STATE_RECEIVE
-    
-        # print results
-        self.rx_box_text.insert(tk.END, '{}'.format(self.rxd) + '\n')
+
 
     def transmit(self):
         input = self.tx_msg.get()
         if 'test' in input:
             self.launchTest(input)
         else:
-            self.txd = [int(value) for value in input.split('')]
+            self.txd = [int(value) for value in input.split(',')]
             self.canfd.state = APP_STATE_TRANSMIT
 
     def setRXchannel(self):
@@ -178,20 +171,27 @@ class canfdgui():
         try:
         #if self.rx_channel.get() in range(0, 32):
             channel = int(self.rx_channel.get())
-            self.canfd.state = "idle"
-            self.canfd.rxchannel = channel
-            self.canfd.reset()
+            if channel in range(0, 32):
+                self.canfd.state = "idle"
+                self.canfd.rxchannel = channel
+                self.rx_box_text.insert(tk.END, "RX channel set to: {}".format(self.canfd.rxchannel) + '\n')
+                self.canfd.reset()
        #else:
         except ValueError:
             tkMessageBox.showinfo("Warning", "Not a valid channel.\nTry a number in range(0, 32)")
 
     def setTXchannel(self):
         # set tx channel and reset
-        if self.tx_channel.get() in range(0,32):
-            self.canfd.state = "idle"
-            self.canfd.txchannel = self.tx_channel.get()
-            self.canfd.reset()
-        else:
+       # if self.tx_channel.get() in range(0,32):
+        try:
+            channel = int(self.tx_channel.get())
+            if channel in range(0, 32):
+                self.canfd.state = "idle"
+                self.canfd.txchannel = channel
+                self.rx_box_text.insert(tk.END, "TX channel set to: {}".format(self.canfd.txchannel) + '\n')
+                self.canfd.reset()
+        #else:
+        except ValueError:
             tkMessageBox.showinfo("Warning", "Not a valid channel.\nTry a number in range(0,32)")
 
     def pause(self):
@@ -200,6 +200,8 @@ class canfdgui():
 
     def stop(self):
         # put state to stop, and abort execution
+        #self.canfd.operationModeSelect(SLEEP_MODE)
+        self.rx_box_text.insert(tk.END, "Stopping..." + '\n')
         self.canfd.state = "stop"
 
     def clear(self):
@@ -214,16 +216,21 @@ class canfdgui():
     def changemode(self):
         self.canfd.state = "idle"
         mode = mode_dict[self.droplist.get()]
-        self.canfd.operationModeSelect()
-        self.canfd.reset()
+        print(self.canfd.operationModeGet())
+        self.rx_box_text.insert(tk.END, "Previous opMode: {mode} - {value}".format(value=self.canfd.operationModeGet(), mode=mode_dict_inv[self.canfd.operationModeGet()]) + '\n')
+        self.canfd.operationModeSelect(mode)
+        self.rx_box_text.insert(tk.END, "opMode changed to : {mode} - {value}".format(value=self.canfd.operationModeGet(), mode=mode_dict_inv[self.canfd.operationModeGet()]) + '\n')
+        #self.canfd.reset()
 
     def changedlc(self):
         self.canfd.state = "idle"
+        self.rx_box_text.insert(tk.END, "Previous mode: {mode} - {value}".format(value=self.canfd.txdlc, mode=dlc_inv_dict[self.canfd.txdlc]) + '\n')
         self.canfd.txdlc = dlc_dict[self.droplist_dlc.get()]
+        self.rx_box_text.insert(tk.END, "Mode changed to: {mode} - {value}".format(value=self.canfd.txdlc, mode=dlc_inv_dict[self.canfd.txdlc]) + '\n')
 
     def launchTest(self, test):
         test_num = int(test[-1])
-        print(test_num)
+        #print(test_num)
         try:
             if test_num < 3:
                 result = tests.test_dict[test]()
@@ -262,13 +269,20 @@ class canfdgui():
                 self.canfd.initTxObj()
 
             elif self.canfd.state == APP_STATE_RECEIVE:
-                self.rxd = self.canfd.receiveMessageTasks()
-                self.canfd.state = "idle"
+                result = self.canfd.receiveMessageTasks()
+                print(result)
+                #self.rxd = result
+                # print results
+                if result is not None:
+                    if self.rxd != result:
+                        self.rxd = result
+                        self.rx_box_text.insert(tk.END, '{}'.format(self.rxd) + '\n')
+                #self.canfd.state = "idle"
 
             elif self.canfd.state == APP_STATE_TRANSMIT:
-
                 self.canfd.transmitMessageTasks(self.txd)
                 self.canfd.state = "idle"
+                self.canfd.txd = None
 
             elif self.canfd.state == APP_STATE_REQUEST_CONFIG:
                 self.canfd.operationModeSelect(CONFIGURATION_MODE)
@@ -286,6 +300,7 @@ class canfdgui():
 
             elif self.canfd.state == "stop":
                 pass
+        self.window.after(10,self.main)
 
     def dummy_main(self):
         print("Debug mode")

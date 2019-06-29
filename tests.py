@@ -155,9 +155,9 @@ def test6(canfd):
 
 def test7(canfd):
     canfd.initialize()
-    canfd.operationModeSelect(INTERNAL_LOOPBACK_MODE)
-    # transmit message of len = DLC (64 bytes)
-    txd = range(0, canfd.dlcToDataBytes(canfd.txdlc))
+    canfd.operationModeSelect(EXTERNAL_LOOPBACK_MODE)
+    canfd.txdlc = 8
+    txd = [0, 0xA, 0xF1, 1, 13, 7, 253, 27]
     result = 'Message to transmit: {}\n'.format(txd)
     canfd.transmitMessageTasks(txd)
     # receive message

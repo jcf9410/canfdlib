@@ -67,7 +67,37 @@ def method3():
     reg.IsoCrcEnable = 1
     # reg.word is result to write
 
-if __name__ == '__main__':
-    print(timeit.timeit("method1()", setup="from __main__ import method1", number=100000))
-    print(timeit.timeit("method2()", setup="from __main__ import method2", number=100000))
-    print(timeit.timeit("method3()", setup="from __main__ import method3", number=100000))
+#if __name__ == '__main__':
+#    print(timeit.timeit("method1()", setup="from __main__ import method1", number=100000))
+#    print(timeit.timeit("method2()", setup="from __main__ import method2", number=100000))
+#    print(timeit.timeit("method3()", setup="from __main__ import method3", number=100000))
+
+import Tkinter, tkMessageBox, time, winsound, msvcrt
+
+Freq = 2500
+Dur = 150
+
+top = tkinter.Tk()
+top.title('MapAwareness')
+top.geometry('200x100')  # Size 200, 200
+
+
+def start():
+    global job1
+    if running == True:
+        winsound.Beep(Freq, Dur)
+        job1 = top.after(1000, start)  # reschedule event in 1 seconds
+
+
+def stop():
+    global job1
+    top.after_cancel(job1)
+
+
+startButton = tkinter.Button(top, height=2, width=20, text="Start", command=start)
+stopButton = tkinter.Button(top, height=2, width=20, text="Stop", command=stop)
+
+startButton.pack()
+stopButton.pack()
+# top.after(1000, start)
+top.mainloop()

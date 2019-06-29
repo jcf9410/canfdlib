@@ -16,6 +16,8 @@ mode_dict = {
     "INVALID_MODE":  0xFF
 }
 
+mode_dict_inv = {v: k for k, v in mode_dict.iteritems()}
+
 dlc_dict = {
     "CAN_DLC_0":  0,
     "CAN_DLC_1":  1,
@@ -34,3 +36,5 @@ dlc_dict = {
     "CAN_DLC_48":  14,
     "CAN_DLC_64":  15
 }
+
+dlc_inv_dict = {v: k for k, v in dlc_dict.iteritems()}
