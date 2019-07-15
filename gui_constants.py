@@ -1,6 +1,6 @@
 window_title = "CAN-FD Sniffer"
-window_size = "820x200"
-rx_textbox_height = 10
+window_size = "900x350"
+rx_textbox_height = 20
 rx_textbox_width = 50
 tx_msg_width = 50
 

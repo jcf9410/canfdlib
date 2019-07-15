@@ -23,7 +23,7 @@ class canfdgui():
         self.corner_frame = tk.Frame(self.window, width=100, height=20)
         self.extra_frame = tk.Frame(self.window, width=30, height=100)
         self.window.grid_columnconfigure(1, weight=1)
-        self.right_frame.grid(row=0, column=1, sticky="nsew")
+        self.right_frame.grid(row=0, column=1)
         self.left_frame.grid(row=0, column=0, sticky="nsew")
         self.corner_frame.grid(row=1,column=0,sticky="sw")
         self.extra_frame.grid(row=0, column=2)
@@ -97,6 +97,18 @@ class canfdgui():
         self.connect_button.grid(column=0, row=2, pady=5) # enlarge
         self.connect_button.config(height=3, width=15)
 
+        # bit time button
+        self.bittime = tk.Button(self.extra_frame, text="BIT TIME", command=self.bittime)
+        self.bittime.grid(column=0, row=3, pady=5)
+
+        # bit time droplist
+        OPTIONS_bit = ["500k_2M", "500k_4M"]
+        self.droplist_bit = tk.StringVar(self.extra_frame)
+        self.droplist_bit.set(OPTIONS_bit[0])  # default value
+        w = tk.OptionMenu(self.extra_frame, self.droplist_bit, *OPTIONS_bit)
+        w.grid(column=0,row=4, padx=5)
+        #self.droplist_bit.grid(column=0, row=4, pady=5)
+
         # dlc droplist and button
         OPTIONS_dlc = ["CAN_DLC_0","CAN_DLC_1","CAN_DLC_2","CAN_DLC_3","CAN_DLC_4","CAN_DLC_5","CAN_DLC_6","CAN_DLC_7","CAN_DLC_8","CAN_DLC_12","CAN_DLC_16","CAN_DLC_20","CAN_DLC_24","CAN_DLC_32","CAN_DLC_48","CAN_DLC_64"]
 
@@ -123,6 +135,15 @@ class canfdgui():
                 #self.window.after(10, self.main)
                 self.main()
                 self.window.mainloop()
+
+    def bittime(self):
+        self.canfd.state = "idle"
+        if self.droplist_dlc.get() == "500k_2M":
+            self.canfd.selectedBitTime = CAN_500K_2M
+            self.rx_box_text.insert(tk.END, "Bit time: {v} - {value}".format(v="500k_2M", value=self.canfd.selectedBitTime) + '\n')
+        else:
+            self.canfd.selectedBitTime = CAN_500K_4M
+            self.rx_box_text.insert(tk.END, "Bit time: {v} - {value}".format(v="500k_4M", value=self.canfd.selectedBitTime) + '\n')
 
     def connect(self):
         if self.debug:
@@ -156,7 +177,6 @@ class canfdgui():
     def receive(self):
         # start receiving
         self.canfd.state = APP_STATE_RECEIVE
-
 
     def transmit(self):
         input = self.tx_msg.get()
@@ -212,11 +232,12 @@ class canfdgui():
         self.canfd.state = "idle"
         self.canfd.reset()
         self.rx_box_text.insert(tk.END, "Resetting..." + '\n')
+        self.canfd.initialize()
 
     def changemode(self):
         self.canfd.state = "idle"
         mode = mode_dict[self.droplist.get()]
-        print(self.canfd.operationModeGet())
+        #print(self.canfd.operationModeGet())
         self.rx_box_text.insert(tk.END, "Previous opMode: {mode} - {value}".format(value=self.canfd.operationModeGet(), mode=mode_dict_inv[self.canfd.operationModeGet()]) + '\n')
         self.canfd.operationModeSelect(mode)
         self.rx_box_text.insert(tk.END, "opMode changed to : {mode} - {value}".format(value=self.canfd.operationModeGet(), mode=mode_dict_inv[self.canfd.operationModeGet()]) + '\n')
@@ -270,13 +291,13 @@ class canfdgui():
 
             elif self.canfd.state == APP_STATE_RECEIVE:
                 result = self.canfd.receiveMessageTasks()
-                print(result)
+                #print("GUI result: {}".format(result))
                 #self.rxd = result
                 # print results
                 if result is not None:
-                    if self.rxd != result:
-                        self.rxd = result
-                        self.rx_box_text.insert(tk.END, '{}'.format(self.rxd) + '\n')
+                    #if self.rxd != result:
+                    self.rxd = result
+                    self.rx_box_text.insert(tk.END, '{}'.format([hex(a) for a in self.rxd]) + '\n')
                 #self.canfd.state = "idle"
 
             elif self.canfd.state == APP_STATE_TRANSMIT:
@@ -297,7 +318,6 @@ class canfdgui():
 
             elif self.canfd.state == "idle":
                 pass
-
             elif self.canfd.state == "stop":
                 pass
         self.window.after(10,self.main)

@@ -19,7 +19,7 @@ def set_bit(v, index, x):
 class CANFD_SPI(ft.SPI):
 
     def __init__(self, ft232h, cs, max_speed_hz, mode, bitorder, SPI_DEFAULT_BUFFER_LENGTH, SPI_MAX_BUFFER_LENGTH,
-                 SPI_BAUDRATE, verbose=True):
+                 SPI_BAUDRATE, verbose=False):
         super(CANFD_SPI, self).__init__(ft232h, cs, max_speed_hz, mode, bitorder)
 
         self.SPI_DEFAULT_BUFFER_LENGTH = SPI_DEFAULT_BUFFER_LENGTH
@@ -898,19 +898,25 @@ class CANFD_SPI(ft.SPI):
         except KeyError:
             return CAN_DLC_0
 
-    def ramTest(self):
+    def ramTest(self, verbose=False):
         # verify R/W
         # txd = [0] * MAX_DATA_BYTES
         # rxd = [0] * MAX_DATA_BYTES
+        if verbose:
+            s = ''
         for length in range(4, MAX_DATA_BYTES + 1, 4):
             txd = [(randint(0, RAND_MAX) & 0xFF) for e in range(0, length)]
             # rxd = [0xFF] * length
             if self.verbose:
                 print("Data written on RAM: {}".format(txd))
+            if verbose:
+                s = s + "Data written on RAM: {}\n".format(txd)
             self.writeByteArray(cRAMADDR_START, txd)
             rxd = self.readByteArray(cRAMADDR_START, length)
             if self.verbose:
                 print("Data read on RAM: {}".format(rxd))
+            if verbose:
+                s = s + "Data read on RAM: {}\n".format(rxd)
             # good = False
             for i in range(0, length):
                 good = txd[i] == rxd[i]
@@ -920,9 +926,14 @@ class CANFD_SPI(ft.SPI):
                     return -1
         #self.state = APP_STATE_TEST_REGISTER_ACCESS
         self.reset()
-        return 1
+        if verbose:
+            return 1, s
+        else:
+            return 1
 
-    def registerTest(self):
+    def registerTest(self, verbose=False):
+        if verbose:
+            s = ''
         for length in range(1, MAX_DATA_BYTES + 1):
             txd = [(randint(0, RAND_MAX) & 0x7F) for e in range(0, length)]
             self.writeByteArray(cREGADDR_CiFLTOBJ, txd)
@@ -930,6 +941,9 @@ class CANFD_SPI(ft.SPI):
             if self.verbose:
                 print("Data written on Registers: {}".format(txd))
                 print("Data read on Registers: {}".format(rxd))
+            if verbose:
+                s = s + "Data written on Registers: {}\n".format(txd)
+                s = s + "Data read on Registers: {}\n".format(rxd)
             # good = False
             for i in range(0, length):
                 good = txd[i] == rxd[i]
@@ -939,7 +953,10 @@ class CANFD_SPI(ft.SPI):
                     return -1
        # self.state = APP_STATE_INIT_TXOBJ
         self.reset()
-        return 1
+        if verbose:
+            return 1, s
+        else:
+            return 1
 
     def initTxObj(self):
         self.txObj.id.word = 0

@@ -78,13 +78,13 @@ def test3(canfd):
     canfd.reset()
     address = 0x000
     word = canfd.readWord(address)
-    result = 'Reading CiCON: {}\n:'.format(word)
+    result = 'Reading CiCON: {}\n'.format(hex(word))
 
     write_word = 0x600798F4
-    result = result + "Word to write: {}\n".format(write_word)
+    result = result + "Word to write: {}\n".format(hex(write_word))
     canfd.writeWord(address, write_word)
     word = canfd.readWord(address)
-    result = result + 'Reading CiCON with {write_word} written on it: {word}\n'.format(write_word=write_word, word=word)
+    result = result + 'Reading CiCON with {write_word} written on it: {word}\n'.format(write_word=hex(write_word), word=hex(word))
 
     canfd.reset()
     result = result + "Resetting...\n"
@@ -92,7 +92,7 @@ def test3(canfd):
     write_byte = 0x6F
     canfd.writeByte(address, write_byte)
     word = canfd.readWord(address)
-    result = result + 'Reading CiCON with {write_byte} written on its 1st byte: {word}'.format(write_byte=write_byte, word=word)
+    result = result + 'Reading CiCON with {write_byte} written on its 1st byte: {word}\n'.format(write_byte=hex(write_byte), word=hex(word))
 
     canfd.reset()
     result = result + "Resetting...\n"
@@ -100,7 +100,7 @@ def test3(canfd):
     write_byte_array = [0x60, 0x07, 0x98, 0xF4]
     canfd.writeByteArray(address, write_byte_array)
     word = canfd.readWord(address)
-    result = result + 'Reading CiCON with {write_byte_array} array written on it (4 bytes): {word}\n'.format(write_byte_array=write_byte_array, word=word)
+    result = result + 'Reading CiCON with {write_byte_array} array written on it (4 bytes): {word}\n'.format(write_byte_array=[hex(a) for a in write_byte_array], word=hex(word))
 
     canfd.reset()
     result = result + "Resetting...\n"
@@ -108,27 +108,27 @@ def test3(canfd):
     write_word_array = [0x600798F4, 0x7f0f3eff]
     canfd.writeWordArray(address, write_word_array)
     word = canfd.readWordArray(address, 2)
-    result = result + 'Reading CiCON and CiNBTCFG with {write_word_array} written on it: {word}\n'.format(write_word_array=write_word_array, word=word)
+    result = result + 'Reading CiCON and CiNBTCFG with {write_word_array} written on it: {word}\n'.format(write_word_array=[hex(a) for a in write_word_array], word=[hex(a) for a in word])
 
     return result
 
 def test4(canfd):
     canfd.reset()
-    result = canfd.ramTest()
+    result, s = canfd.ramTest(verbose=True)
     if result == -1:
         result = "RAM test failed!\n"
     else:
         result = 'RAM test succesful!\n'
-    return result
+    return result + '\n' + s
 
 def test5(canfd):
     canfd.reset()
-    result = canfd.registerTest()
+    result, s = canfd.registerTest(verbose=True)
     if result == -1:
         result = "Register test failed!\n"
     else:
         result = 'Register test succesful!\n'
-    return result
+    return result + '\n' + s
 
 def test6(canfd):
     canfd.reset()
@@ -163,6 +163,7 @@ def test7(canfd):
     # receive message
     rxd = canfd.receiveMessageTasks()
     result = result +"Received message: {}\n".format(rxd)
+    canfd.reset()
     return result
 
 
